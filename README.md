@@ -7,7 +7,7 @@ python: > 3.5
 
 ## Setup
 
-### Local dev environment
+### 1. Local dev environment
 execute the following in the console terminal within the directory
 
 ##### Install dependencies
@@ -18,7 +18,7 @@ execute the following in the console terminal within the directory
 1. uvicorn main:app --reload --host 0.0.0.0 --port 8000
 2. Server now running on http://localhost:8000
 
-### GCP Compute engine environment
+### 2. GCP Compute engine environment
 
 ### On google cloud shell execute the following to create a cluster manager vm, this will spin up a new VM that will spin up the API on port 8000
 gcloud beta compute instances create bladeai-clustermanager \
