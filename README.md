@@ -19,7 +19,7 @@ execute the following in the console terminal within the directory
 
 ##### Running server
 
-1. uvicorn main:app --reload    
+1. uvicorn main:app --reload --host 0.0.0.0 --port 8000
 2. Server now running on http://localhost:8000
 
 ### Deployment
