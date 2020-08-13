@@ -6,6 +6,10 @@ Version : 1
 python: > 3.5
 
 ## Setup
+Create a cloud VM (here we use GCP Debian 9)
+Install python 
+sudo apt update
+sudo apt install python3 python3-dev python3-venv
 
 ### Local dev environment
 execute the following in the console terminal within the directory
