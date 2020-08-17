@@ -1,7 +1,6 @@
 from fastapi import FastAPI
 from typing import Optional
 from pydantic import BaseModel
-import subprocess
 
 app = FastAPI()
 
@@ -16,7 +15,6 @@ class Body(BaseModel):
     """
     name: str
     description: Optional[str] = None
-
 
 @app.get('/')
 async def getAll():

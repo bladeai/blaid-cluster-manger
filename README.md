@@ -13,6 +13,11 @@ execute the following in the console terminal within the directory
 ##### Install dependencies
 1. pip3 install -r requirements.txt
 
+##### Running Local Environment Test instruction
+1. Open test.py in text editor
+2. uncomment the lines to test CREATE and SHUTDOWN
+3. run 'python test.py' in terminal
+
 ##### Running server
 
 1. uvicorn main:app --reload --host 0.0.0.0 --port 8000
