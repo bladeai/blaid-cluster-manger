@@ -1,8 +1,12 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from typing import Optional
 from pydantic import BaseModel
+import json
+from clusters import ClusterCollection
 
 app = FastAPI()
+
+clusters = ClusterCollection()
 
 class Body(BaseModel):
     """ Model of data structure passed to the API call as body
@@ -15,6 +19,7 @@ class Body(BaseModel):
     """
     name: str
     description: Optional[str] = None
+    state: Optional[str] = None
 
 @app.get('/')
 async def getAll():
@@ -26,8 +31,7 @@ async def getAll():
         returns response from script
 
     """
-    return process_response(subprocess.run(['sh', './getAll.sh'],
-    stdout=subprocess.PIPE))
+    return [json.loads(cluster.export()) for cluster in clusters.get_all]
 
 @app.get('/{id}')
 async def get(id):
@@ -44,10 +48,13 @@ async def get(id):
         returns response from script
 
     """
-    process = subprocess.run(['sh', './getByID.sh', str(id)],
-                         stdout=subprocess.PIPE,
-                         universal_newlines=True)
-    return {'message' : process.stdout}
+
+    cluster = clusters.get_by_id(id)
+
+    if cluster is None:
+        raise HTTPException(status_code=404, detail="Cluster not found")
+
+    return json.loads(cluster.export())
 
 
 @app.post('/')
@@ -65,10 +72,9 @@ async def create(body: Body):
         returns response from script
 
     """
-    process = subprocess.run(['sh', './create.sh', str(body)],
-                         stdout=subprocess.PIPE,
-                         universal_newlines=True)
-    return process_response(process)
+    cluster = clusters.create(body.dict())
+    execution_code = cluster.startup()
+    return json.loads(cluster.export())
 
 @app.put('/{id}')
 async def update(id, body: Body):
@@ -87,10 +93,15 @@ async def update(id, body: Body):
         returns response from script
 
     """
-    process = subprocess.run(['sh', './update.sh', str(id), str(body)],
-                         stdout=subprocess.PIPE,
-                         universal_newlines=True)
-    return process_response(process)
+
+    cluster = clusters.get_by_id(id)
+
+    if cluster is None:
+        raise HTTPException(status_code=404, detail="Cluster not found")
+
+    cluster.update(body.dict())
+
+    return json.loads(cluster.export())
 
 @app.delete('/{id}')
 async def delete(id):
@@ -107,26 +118,10 @@ async def delete(id):
         returns response from script
 
     """
-    process = subprocess.run(['sh', './delete.sh'],
-                         stdout=subprocess.PIPE,
-                         universal_newlines=True)
-    return {'message' : process.stdout}
+    cluster = clusters.get_by_id(id)
 
+    if cluster is None:
+        raise HTTPException(status_code=404, detail="Cluster not found")
 
-def process_response(process):
-    """Method to process all script reponses
-
-    Parameters
-    ----------
-    process : type
-        Description of parameter `process`.
-
-    Returns
-    -------
-    type
-        returns error or message depending on returned stderr or stdout
-
-    """
-    if process.stderr is not None:
-        return {'error' : process.stderr}
-    return {'message' : process.stdout}
+    execution_code = cluster.shutdown()
+    return {"message" : "deleting cluster"}

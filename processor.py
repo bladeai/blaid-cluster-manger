@@ -7,7 +7,6 @@ class AsyncProcessor(BaseModel):
     def __init__(self, data):
         super(AsyncProcessor, self).__init__(data)
 
-
     async def _read_stream(self, stream, cb):
         while True:
             line = await stream.readline()
