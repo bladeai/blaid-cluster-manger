@@ -47,15 +47,13 @@ class BaseModel(object):
             self._[key] = data[key]
 
     def export(self):
-        return json.dumps(self._)
+        self._['id'] = str(self._['_id'])
+        del self._['_id']
+        return self._
 
     @property
     def id(self):
-        return self.get('id', None)
-
-    @id.setter
-    def id(self, id):
-        self.set('id', id, string)
+        return self.get('_id', None)
 
     @property
     def extensors(self):
@@ -68,6 +66,10 @@ class BaseModel(object):
     @property
     def record_history(self):
         return self.get('record_history', None)
+
+    @record_history.setter
+    def record_history(self, record):
+        self.set('record_history', record, dict)
 
     @property
     def created_at(self):
@@ -88,6 +90,12 @@ class BaseModel(object):
     def updated_at(self):
         record = self.record_history
         return record.get('updated_at', None)
+
+    @updated_at.setter
+    def updated_at(self, time):
+        record = self.record_history
+        record['updated_at'] = time
+        self.record_history = record
 
     @property
     def updated_by(self):

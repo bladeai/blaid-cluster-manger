@@ -1,0 +1,6 @@
+environment = "PRODUCTION"
+url = "http://app.blaid.com"
+db_url = "mongodb+srv://blaid-core:vXQewcN3g1irMHiU@blaid-core-0.yqgjg.mongodb.net/blaid-core-0?retryWrites=true&w=majority"
+db_name = "blaid-core-0"
+api_server = "https://api.blaid.io"
+auth_server = "https://auth-api.blaid.io"

@@ -18,12 +18,12 @@ class Cluster(AsyncProcessor):
             self.state = State.Off
 
     @property
-    def id(self):
-        return self.get('id', None)
+    def hooks(self):
+        return self.get('hooks', [])
 
-    @id.setter
-    def id(self, id):
-        self.set('id', id, int)
+    @hooks.setter
+    def hooks(self, hooks):
+        self.set('hooks', hooks, list)
 
     @property
     def create_script_command(self):
@@ -31,7 +31,7 @@ class Cluster(AsyncProcessor):
 
     @create_script_command.setter
     def create_script_command(self, path):
-        self.set('create_script_command', path, list)
+        self.set('create_script_command', path, str)
 
     @property
     def shutdown_script_command(self):
@@ -39,7 +39,7 @@ class Cluster(AsyncProcessor):
 
     @shutdown_script_command.setter
     def shutdown_script_command(self, path):
-        self.set('shutdown_script_command', path, list)
+        self.set('shutdown_script_command', path, str)
 
     @property
     def state(self):
@@ -48,6 +48,17 @@ class Cluster(AsyncProcessor):
     @state.setter
     def state(self, state):
         self.set('state', state, State)
+
+    def add_hook(self, hook):
+        hooks = self.hooks
+        hooks.append(hook)
+        self.hooks = hooks
+
+    def remove_hook(self, hook):
+        self.hooks.remove(hook)
+
+    def clear_hooks(self):
+        self.hooks.clear()
 
     def startup(self):
         self.state = State.StartingUp

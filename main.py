@@ -18,8 +18,6 @@ class Body(BaseModel):
 
     """
     name: str
-    description: Optional[str] = None
-    state: Optional[str] = None
 
 @app.get('/')
 async def getAll():
@@ -31,7 +29,7 @@ async def getAll():
         returns response from script
 
     """
-    return [json.loads(cluster.export()) for cluster in clusters.get_all]
+    return [cluster.export() for cluster in clusters.get_all()]
 
 @app.get('/{id}')
 async def get(id):
@@ -48,17 +46,16 @@ async def get(id):
         returns response from script
 
     """
-
     cluster = clusters.get_by_id(id)
 
     if cluster is None:
-        raise HTTPException(status_code=404, detail="Cluster not found")
+        raise HTTPException(status_code=404, detail="Cluster not found for ID: {0}".format(id))
 
-    return json.loads(cluster.export())
+    return cluster.export()
 
 
 @app.post('/')
-async def create(body: Body):
+def create(body: Body):
     """ Create resource
 
     Parameters
@@ -72,12 +69,17 @@ async def create(body: Body):
         returns response from script
 
     """
+    cluster = clusters.get_by_query(body.dict())
+
+    if len(cluster) > 0:
+        raise HTTPException(status_code=400, detail="Cluster already exists")
+
     cluster = clusters.create(body.dict())
-    execution_code = cluster.startup()
-    return json.loads(cluster.export())
+    # execution_code = cluster.startup()
+    return cluster.export()
 
 @app.put('/{id}')
-async def update(id, body: Body):
+def update(id, body: Body):
     """ Update resource by ID
 
     Parameters
@@ -97,14 +99,15 @@ async def update(id, body: Body):
     cluster = clusters.get_by_id(id)
 
     if cluster is None:
-        raise HTTPException(status_code=404, detail="Cluster not found")
+        raise HTTPException(status_code=404, detail="Cluster not found for ID: {0}".format(id))
 
     cluster.update(body.dict())
+    cluster = clusters.update(cluster)
 
-    return json.loads(cluster.export())
+    return cluster.export()
 
 @app.delete('/{id}')
-async def delete(id):
+def delete(id):
     """Delete resource by ID
 
     Parameters
@@ -121,7 +124,10 @@ async def delete(id):
     cluster = clusters.get_by_id(id)
 
     if cluster is None:
-        raise HTTPException(status_code=404, detail="Cluster not found")
+        raise HTTPException(status_code=404, detail="Cluster not found for ID: {0}".format(id))
 
-    execution_code = cluster.shutdown()
-    return {"message" : "deleting cluster"}
+    results = clusters.delete(cluster)
+
+    if results.acknowledged:
+        return {"message" : "cluster deleted"}
+    raise HTTPException(status_code=400, detail=results.raw_result)

@@ -1,66 +1,61 @@
 import json
 from uuid import uuid4
+from pymongo import MongoClient
+from bson.objectid import ObjectId
+from config import db_url, db_name
+import time
 
 class BaseCollection(object):
     """BaseModel for inheritance on any objects moving forwardx"""
 
-    def __init__(self, meta_type, data = None):
+    def __init__(self, meta_type, collection_name):
         super(BaseCollection, self).__init__()
-        self._ = {"index": {"id": {}}}
-        self._items = []
+
+        self.client = MongoClient(db_url)
+        self.db = self.client[db_name]
+        self.collection = self.db[collection_name]
         self.meta_type = meta_type;
 
-        if data is not None:
-            self.create_batch(data)
-
-    @property
     def get_all(self):
-        return self._items
+        return self.get_by_query({})
 
-    @property
     def get_count(self):
-        return len(self._items)
+        return len(self.get_all)
+
+    def get_by_id(self, id):
+        item = self.collection.find_one({'_id': ObjectId(id)})
+        if item is not None:
+            return self.meta_type(item)
+        return None
+
+    def get_by_query(self, query):
+        return [self.meta_type(item) for item in self.collection.find(query)]
 
     def create(self, data):
-        obj = None
-
-        if data is not None and isinstance(data, dict):
-            if "id" not in data:
-                data["id"] = str(uuid4())
-
-            obj = self.meta_type(data)
-            self._items.append(obj)
-            self._["index"]["id"][obj.id] = obj
-
-        return obj
+        data['record_history'] = {}
+        data['record_history']['created_at'] = int(time.time())
+        item = self.collection.insert_one(data)
+        return self.get_by_id(item.inserted_id)
 
     def create_batch(self, data):
         set = list()
 
         if data is not None and isinstance(data, list):
-            set = [self.create(d) for d in data]
+            items = self.collection.insert_many(data)
+            set = [self.meta_type(self.get_by_id(id)) for id in items.inserted_ids]
 
         return set
 
-    def delete_by_id(self, id):
-        cluster = self.get_by_id(id)
-        if cluster is None:
-            return {'detail': 'cluster not found'}
+    def update(self, item):
+        if item is not None and isinstance(item, self.meta_type):
+            item.updated_at = int(time.time())
+            data = item.export()
+            del data['id']
+            self.collection.update_one({'_id': item.id}, {'$set': data})
+            return item
+        return None
 
-        idx = self._items.index(cluster)
-        self._items.pop(idx)
-        del self._["index"]["id"][id]
-
-        return {'detail': 'cluster deleted'}
-
-    def is_meta_type(self, item):
-        return item is not None and isinstance(item, self.meta_type)
-
-    def export(self):
-        return json.dumps({"items" : [item.export() for item in self.get_all]})
-
-    def get_by_id(self, id):
-        if id in self._["index"]["id"]:
-            return self._["index"]["id"][id]
-
-        return next((item for item in self._items if item.id == id), None)
+    def delete(self, item):
+        if item is not None and isinstance(item, self.meta_type):
+            return self.collection.delete_one({'_id': item.id})
+        return None
